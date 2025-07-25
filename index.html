@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8" />
+  <title>Splash Crazy - Jogo da Bolinha Neon</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body, html {
+      height: 100%;
+      font-family: Arial, sans-serif;
+      background-color: #111;
+      color: #0ff;
+      overflow: hidden;
+      user-select: none;
+    }
+    #container {
+      display: flex;
+      height: 100vh;
+      width: 100vw;
+      gap: 10px;
+      padding: 10px;
+      box-sizing: border-box;
+      /* inicialmente escondido até o menu fechar */
+      display: none;
+    }
+    #painel-lateral {
+      width: 320px;
+      background: #000011;
+      border: 2px solid #0ff;
+      border-radius: 15px;
+      box-shadow: 0 0 20px #0ff;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px;
+      gap: 15px;
+      overflow-y: auto;
+    }
+    #painel-info {
+      width: 100%;
+      font-size: 14px;
+      margin-bottom: 10px;
+      line-height: 1.6;
+      color: #0ff;
+    }
+    #painel-info div {
+      margin-bottom: 4px;
+    }
+    #formularioFeedback {
+      width: 100%;
+      border: 2px solid #0ff;
+      border-radius: 15px;
+      padding: 10px;
+      box-shadow: 0 0 15px #0ff;
+      background-color: #111;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+    #formularioFeedback h3 {
+      margin-bottom: 5px;
+      text-align: center;
+      font-weight: bold;
+      color: #0ff;
+    }
+    #formularioFeedback input, #formularioFeedback textarea {
+      padding: 8px;
+      border-radius: 8px;
+      border: 1px solid #0ff;
+      background: #000;
+      color: #0ff;
+      font-size: 14px;
+      resize: none;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    #formularioFeedback button {
+      background-color: transparent;
+      color: #0ff;
+      padding: 10px;
+      border: 2px solid #0ff;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 0 10px #0ff;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #formularioFeedback button:hover {
+      background-color: #0cc;
+      color: #000;
+    }
+    #botaoVoltar {
+      margin-top: 10px;
+      background-color: transparent;
+      color: #0ff;
+      padding: 10px 0;
+      border: 2px solid #0ff;
+      border-radius: 12px;
+      cursor: pointer;
+      font-size: 16px;
+      box-shadow: 0 0 10px #0ff;
+      width: 100%;
+      text-align: center;
+      user-select: none;
+      transition: background-color 0.3s, color 0.3s;
+    }
+    #botaoVoltar:hover {
+      background-color: #0cc;
+      color: #000;
+    }
+    #jogoCanvas {
+      flex-grow: 1;
+      background: #001122;
+      border: 4px solid #0ff;
+      border-radius: 20px;
+      box-shadow: 0 0 40px #0ff;
+      display: block;
+      max-width: 100%;
+      max-height: 100%;
+      touch-action: none;
+    }
+    #seta {
+      position: absolute;
+      width: 40px;
+      height: 40px;
+      cursor: pointer;
+      filter: drop-shadow(0 0 5px #0ff);
+      user-select: none;
+      touch-action: none;
+      z-index: 100;
+      display: none;
+    }
+    .painel-principal {
+      border: 2px solid #0ff;
+      padding: 20px;
+      border-radius: 20px;
+      box-shadow: 0 0 20px #0ff;
+      background-color: #111;
+      text-align: center;
+      max-width: 320px;
+      margin: auto;
+      position: fixed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      z-index: 9999;
+    }
+  </style>
+</head>
+<body>
+
+<div id="container">
+  <div id="painel-lateral">
+    <div id="painel-info">
+      <!-- Nome do jogador removido conforme pedido -->
+      <!-- <div><strong>Jogador:</strong> <span id="jogadorNome">Noah</span></div> -->
+      <div><strong>Pontuação:</strong> <span id="pontuacao">0</span></div>
+      <div><strong>Recorde:</strong> <span id="recorde">0</span></div>
+      <div><strong>Vidas:</strong> <span id="vidas">3</span></div>
+      <div><strong>Fase:</strong> <span id="fase">1</span></div>
+    </div>
+    <div id="formularioFeedback">
+      <h3>Comentário / Sugestão</h3>
+      <form action="https://formsubmit.co/noahrosa8046@gmail.com" method="POST">
+        <input type="text" name="nome" placeholder="Seu nome" required />
+        <textarea name="mensagem" rows="5" placeholder="Escreva aqui..." required></textarea>
+        <input type="hidden" name="_captcha" value="false" />
+        <button type="submit">Enviar</button>
+      </form>
+    </div>
+    <button id="botaoVoltar" onclick="voltarMenuPrincipal()">Voltar ao Menu</button>
+  </div>
+
+  <canvas id="jogoCanvas" width="700" height="500"></canvas>
+
+  <img id="seta" src="data:image/svg+xml;utf8,
+    <svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'>
+      <polygon points='32 0 24 16 40 16 32 0' fill='%2300ffff'/>
+      <rect x='28' y='16' width='8' height='40' fill='%2300ffff'/>
+    </svg>" alt="Seta para lançar bola" title="Clique ou toque para lançar a bolinha" />
+</div>
+
+<!-- Menu Principal -->
+<div id="menuPrincipal" class="painel-principal" >
+  <h1>Menu Principal</h1>
+  <button class="botao" onclick="iniciarJogo()">Start</button>
+  <button class="botao" onclick="fecharJogo()">Exit</button>
+</div>
+
+<script>
+  // Prompt para o jogador digitar o nome ao carregar a página
+  let nomeJogador = prompt("Digite seu nome para jogar:", "Jogador");
+  if (!nomeJogador || nomeJogador.trim() === "") {
+    nomeJogador = "Jogador";
+  }
+  // Atualiza o título da aba do navegador com o nome
+  document.title = `Splash Crazy - Jogador: ${nomeJogador}`;
+
+  // Mostrar o menu principal (já está visível por padrão)
+  // Esconder o container do jogo até o Start ser clicado
+
+  let jogoAtivo = false;
+  let pontuacao = 0;
+  let recorde = 0;
+  let vidas = 3;
+  let faseAtual = 1;
+
+  const canvas = document.getElementById('jogoCanvas');
+  const ctx = canvas.getContext('2d');
+
+  const paddle = {
+    width: 80,
+    height: 15,
+    x: canvas.width / 2 - 40,
+    y: canvas.height - 40,
+    color: '#00ffff',
+    sombra: '#33ffff'
+  };
+
+  const bolaRaio = 7;
+  let bolaX = paddle.x + paddle.width / 2;
+  let bolaY = paddle.y - bolaRaio;
+  let bolaDX = 0;
+  let bolaDY = 0;
+  let bolaLancada = false;
+
+  const seta = document.getElementById('seta');
+
+  const linhasBlocos = 5;
+  const colunasBlocos = 12;
+  const blocoPadding = 6;
+  const blocoLargura = (canvas.width - (colunasBlocos + 1) * blocoPadding) / colunasBlocos;
+  const blocoAltura = 18;
+  let blocos = [];
+
+  function criarBlocos() {
+    blocos = [];
+    const cores = ['#aa00ff', '#00aaff', '#00ff33'];
+    for(let linha = 0; linha < linhasBlocos; linha++) {
+      let corAtual = cores[linha % cores.length];
+      for(let col = 0; col < colunasBlocos; col++) {
+        blocos.push({
+          x: blocoPadding + col * (blocoLargura + blocoPadding),
+          y: blocoPadding + linha * (blocoAltura + blocoPadding) + 40,
+          largura: blocoLargura,
+          altura: blocoAltura,
+          cor: corAtual,
+          destruido: false
+        });
+      }
+    }
+  }
+
+  function desenharPaddle() {
+    ctx.save();
+    ctx.fillStyle = paddle.color;
+    ctx.shadowColor = paddle.sombra;
+    ctx.shadowBlur = 15;
+    ctx.fillRect(paddle.x, paddle.y, paddle.width, paddle.height);
+    ctx.restore();
+  }
+
+  function desenharBlocos() {
+    blocos.forEach(bloco => {
+      if(!bloco.destruido) {
+        ctx.save();
+        ctx.fillStyle = bloco.cor;
+        ctx.shadowColor = bloco.cor;
+        ctx.shadowBlur = 20;
+        ctx.fillRect(bloco.x, bloco.y, bloco.largura, bloco.altura);
+        ctx.restore();
+      }
+    });
+  }
+
+  function desenharBola() {
+    ctx.save();
+    let grad = ctx.createRadialGradient(bolaX, bolaY, bolaRaio/2, bolaX, bolaY, bolaRaio);
+    grad.addColorStop(0, '#00ffff');
+    grad.addColorStop(1, '#004466');
+    ctx.fillStyle = grad;
+    ctx.shadowColor = grad;
+    ctx.shadowBlur = 15;
+    ctx.beginPath();
+    ctx.arc(bolaX, bolaY, bolaRaio, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.closePath();
+    ctx.restore();
+  }
+
+  function atualizarHUD() {
+    document.getElementById('pontuacao').textContent = pontuacao;
+    document.getElementById('recorde').textContent = recorde;
+    document.getElementById('vidas').textContent = vidas;
+    document.getElementById('fase').textContent = faseAtual;
+  }
+
+  function atualizarPosicaoSeta() {
+    const rect = canvas.getBoundingClientRect();
+    seta.style.left = (rect.left + paddle.x + paddle.width / 2 - seta.width / 2) + 'px';
+    seta.style.top = (rect.top + paddle.y - seta.height - 10) + 'px';
+  }
+
+  function resetarJogo() {
+    pontuacao = 0;
+    vidas = 3;
+    faseAtual = 1;
+    bolaLancada = false;
+    bolaX = paddle.x + paddle.width / 2;
+    bolaY = paddle.y - bolaRaio;
+    bolaDX = 0;
+    bolaDY = 0;
+    criarBlocos();
+    atualizarHUD();
+    atualizarPosicaoSeta();
+  }
+
+  function iniciarJogo() {
+    jogoAtivo = true;
+    bolaLancada = false;
+    bolaX = paddle.x + paddle.width / 2;
+    bolaY = paddle.y - bolaRaio;
+    bolaDX = 0;
+    bolaDY = 0;
+    criarBlocos();
+    atualizarHUD();
+    atualizarPosicaoSeta();
+
+    // Esconder menu principal
+    document.getElementById('menuPrincipal').style.display = 'none';
+    // Mostrar container do jogo
+    document.getElementById('container').style.display = 'flex';
+    seta.style.display = 'block';
+
+    gameLoop();
+  }
+
+  function voltarMenuPrincipal() {
+    jogoAtivo = false;
+    bolaLancada = false;
+    document.getElementById('menuPrincipal').style.display = 'block';
+    document.getElementById('container').style.display = 'none';
+    seta.style.display = 'none';
+    resetarJogo();
+  }
+
+  function fecharJogo() {
+    alert('Saindo do jogo...');
+    // Aqui você pode fechar a janela ou redirecionar se quiser
+  }
+
+  function desenharFundo() {
+    let grad = ctx.createLinearGradient(0, 0, 0, canvas.height);
+    grad.addColorStop(0, '#001022');
+    grad.addColorStop(1, '#000000');
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+  }
+
+  function gameLoop() {
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    desenharFundo();
+    desenharPaddle();
+    desenharBlocos();
+    desenharBola();
+
+    if (!bolaLancada) {
+      bolaX = paddle.x + paddle.width / 2;
+      bolaY = paddle.y - bolaRaio;
+      atualizarPosicaoSeta();
+    }
+
+    if (bolaLancada) {
+      bolaX += bolaDX;
+      bolaY += bolaDY;
+
+      const velocidadeMax = 7;
+      bolaDX = Math.max(-velocidadeMax, Math.min(velocidadeMax, bolaDX));
+      bolaDY = Math.max(-velocidadeMax, Math.min(velocidadeMax, bolaDY));
+
+      // Colisão com paredes
+      if (bolaX + bolaRaio > canvas.width || bolaX - bolaRaio < 0) bolaDX = -bolaDX;
+      if (bolaY - bolaRaio < 0) bolaDY = -bolaDY;
+
+      // Colisão com paddle
+      if (
+        bolaY + bolaRaio > paddle.y &&
+        bolaX > paddle.x &&
+        bolaX < paddle.x + paddle.width &&
+        bolaDY > 0
+      ) {
+        bolaDY = -bolaDY;
+        let deltaX = bolaX - (paddle.x + paddle.width / 2);
+        bolaDX = deltaX * 0.18;
+      }
+
+      // Colisão com blocos (destrói um por frame)
+      for (let i = 0; i < blocos.length; i++) {
+        const bloco = blocos[i];
+        if (!bloco.destruido) {
+          if (
+            bolaX > bloco.x &&
+            bolaX < bloco.x + bloco.largura &&
+            bolaY - bolaRaio < bloco.y + bloco.altura &&
+            bolaY + bolaRaio > bloco.y
+          ) {
+            bolaDY = -bolaDY;
+            bloco.destruido = true;
+            pontuacao += 10;
+            if (pontuacao > recorde) recorde = pontuacao;
+            atualizarHUD();
+            break;
+          }
+        }
+      }
+
+      // Verifica se todos os blocos foram destruídos para avançar fase
+      if (blocos.every(bloco => bloco.destruido)) {
+        faseAtual++;
+        criarBlocos();
+        bolaLancada = false;
+        bolaX = paddle.x + paddle.width / 2;
+        bolaY = paddle.y - bolaRaio;
+        bolaDX = 0;
+        bolaDY = 0;
+        atualizarHUD();
+        atualizarPosicaoSeta();
+        seta.style.display = 'block';
+      }
+
+      // Bola caiu
+      if (bolaY - bolaRaio > canvas.height) {
+        vidas--;
+        atualizarHUD();
+        if (vidas <= 0) {
+          alert('Game Over!');
+          jogoAtivo = false;
+          voltarMenuPrincipal();
+          return;
+        }
+        bolaLancada = false;
+        bolaX = paddle.x + paddle.width / 2;
+        bolaY = paddle.y - bolaRaio;
+        bolaDX = 0;
+        bolaDY = 0;
+        atualizarPosicaoSeta();
+        seta.style.display = 'block';
+      }
+    }
+
+    if (jogoAtivo) requestAnimationFrame(gameLoop);
+  }
+
+  function moverPaddle(x) {
+    paddle.x = x - paddle.width / 2;
+    if (paddle.x < 0) paddle.x = 0;
+    if (paddle.x + paddle.width > canvas.width) paddle.x = canvas.width - paddle.width;
+  }
+
+  canvas.addEventListener('mousemove', e => {
+    if(jogoAtivo) {
+      const rect = canvas.getBoundingClientRect();
+      moverPaddle(e.clientX - rect.left);
+    }
+  });
+
+  canvas.addEventListener('touchmove', e => {
+    if(jogoAtivo) {
+      const rect = canvas.getBoundingClientRect();
+      moverPaddle(e.touches[0].clientX - rect.left);
+      e.preventDefault();
+    }
+  }, { passive: false });
+
+  function lancarBola() {
+    if(jogoAtivo && !bolaLancada) {
+      bolaDX = 3;
+      bolaDY = -4;
+      bolaLancada = true;
+      seta.style.display = 'none';
+    }
+  }
+
+  seta.addEventListener('click', lancarBola);
+  canvas.addEventListener('click', lancarBola);
+
+</script>
+
+</body>
+</html>
