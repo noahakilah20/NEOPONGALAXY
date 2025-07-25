@@ -3,301 +3,320 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Splash Crazy - Digite seu nome para jogar</title>
+  <title>Splash Crazy - Jogo da Bolinha Neon</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body, html {
       height: 100%;
       font-family: Arial, sans-serif;
-      background-color: #111;
+      background-color: #000;
       color: #0ff;
       overflow: hidden;
     }
-    #menu, #container {
-      position: absolute;
-      top: 0; left: 0; right: 0; bottom: 0;
+
+    #container {
       display: flex;
-      justify-content: center;
-      align-items: center;
+      height: 100%;
+      width: 100%;
+    }
+
+    #painel-lateral {
+      width: 250px;
+      background-color: #111;
+      padding: 10px;
+      display: flex;
       flex-direction: column;
       gap: 10px;
-      background: #000;
-      z-index: 2;
+      border-right: 2px solid #0ff;
     }
-    #container { display: none; }
-    canvas {
+
+    #jogoCanvas {
       background-color: #000;
+      flex: 1;
       display: block;
-      border: 2px solid #0ff;
-      touch-action: none;
     }
-    button, select {
-      padding: 10px;
-      background: #0ff;
-      color: #000;
-      border: none;
-      font-weight: bold;
-      cursor: pointer;
-    }
+
     .painel-principal {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      z-index: 3;
-    }
-    .painel-principal div {
-      background: #111;
-      border: 1px solid #0ff;
-      padding: 5px 10px;
-    }
-    #comentarios {
-      position: absolute;
-      top: 10%;
-      left: 50%;
-      transform: translateX(-50%);
-      font-size: 18px;
-      opacity: 0;
-      animation: flutuar 2s ease-out forwards;
-    }
-    @keyframes flutuar {
-      0% { opacity: 0; transform: translate(-50%, 0); }
-      50% { opacity: 1; transform: translate(-50%, -20px); }
-      100% { opacity: 0; transform: translate(-50%, -40px); }
-    }
-    #feedback {
-      position: absolute;
-      bottom: 10px;
-      left: 10px;
-      background: #000;
       padding: 10px;
-      border: 1px solid #0ff;
+      background-color: #111;
+      border-radius: 10px;
+      box-shadow: 0 0 10px #0ff;
     }
+
+    h2 {
+      font-size: 1.2em;
+      margin-bottom: 5px;
+    }
+
+    p {
+      margin-bottom: 10px;
+    }
+
     #voltarMenu {
-      position: absolute;
-      top: 10px;
-      left: 10px;
-      background: #0ff;
+      margin-top: auto;
+      background-color: #0ff;
       color: #000;
       border: none;
-      padding: 5px 10px;
-      font-weight: bold;
+      padding: 10px;
       cursor: pointer;
-      z-index: 4;
+      border-radius: 8px;
+      font-weight: bold;
+    }
+
+    @media (max-width: 768px) {
+      #container {
+        flex-direction: column;
+      }
+
+      #painel-lateral {
+        width: 100%;
+        border-right: none;
+        border-top: 2px solid #0ff;
+      }
+
+      #jogoCanvas {
+        width: 100%;
+        height: 60vh;
+      }
     }
   </style>
 </head>
 <body>
-  <div id="menu">
-    <h1>Splash Crazy</h1>
-    <button onclick="iniciarJogo()">Jogar</button>
-    <label>
-      Escolha sua bolinha:
-      <select id="personagemSelect">
-        <option value="normal">Bolinha Neon</option>
-        <option value="ouro" disabled>Bolinha de Ouro (Fase 2)</option>
-        <option value="cristal" disabled>Bolinha de Cristal (Fase 3)</option>
-        <option value="brilhante" disabled>Bolinha Brilhante (Fase 4)</option>
-      </select>
-    </label>
-  </div>
-
   <div id="container">
-    <div class="painel-principal">
-      <div id="pontos">Pontos: 0</div>
-      <div id="vidas">Vidas: 3</div>
-      <div id="fase">Fase: 1</div>
+    <canvas id="jogoCanvas" width="800" height="600"></canvas>
+    <div id="painel-lateral">
+      <div class="painel-principal">
+        <h2>Pontuação</h2>
+        <p id="pontuacao">0</p>
+        <h2>Vidas</h2>
+        <p id="vidas">3</p>
+        <h2>Fase</h2>
+        <p id="fase">1</p>
+      </div>
+      <button id="voltarMenu" onclick="voltarAoMenu()">⟵ Voltar ao Menu</button>
     </div>
-    <canvas id="jogoCanvas" width="360" height="480"></canvas>
-    <div id="comentarios"></div>
-
-    <form id="feedback" action="https://formsubmit.co/SEU_EMAIL_AQUI" method="POST">
-      <label>Comentários:</label><br>
-      <input type="text" name="mensagem" required style="width: 100%;" />
-      <input type="hidden" name="_captcha" value="false">
-      <button type="submit">Enviar</button>
-    </form>
   </div>
-
-  <button id="voltarMenu" onclick="voltarAoMenu()">Voltar ao Menu</button>
 
   <script>
-    let jogador = prompt("Digite seu nome para jogar:");
-    if (jogador) document.title = `Splash Crazy - Jogador: ${jogador}`;
+    let nome = prompt("Digite seu nome para começar:");
+    if (!nome) nome = "Jogador";
+    document.title = `Splash Crazy - Bem-vindo, ${nome}!`;
 
     const canvas = document.getElementById("jogoCanvas");
     const ctx = canvas.getContext("2d");
-    const pontosEl = document.getElementById("pontos");
-    const vidasEl = document.getElementById("vidas");
-    const faseEl = document.getElementById("fase");
-    const menu = document.getElementById("menu");
-    const container = document.getElementById("container");
-    const personagemSelect = document.getElementById("personagemSelect");
+
+    let bola = {
+      x: canvas.width / 2,
+      y: canvas.height - 30,
+      dx: 3,
+      dy: -3,
+      raio: 10
+    };
+
+    let paddle = {
+      altura: 10,
+      largura: 75,
+      x: (canvas.width - 75) / 2
+    };
+
+    let direitaPressionada = false;
+    let esquerdaPressionada = false;
+
+    let tijoloLinha = 5;
+    let tijoloColuna = 7;
+    let tijroLargura = 100;
+    let tijroAltura = 20;
+    let tijroEspaco = 10;
+    let margemTopo = 30;
+    let margemEsquerda = 30;
+
+    let tijolos = [];
+    for (let c = 0; c < tijoloColuna; c++) {
+      tijolos[c] = [];
+      for (let r = 0; r < tijoloLinha; r++) {
+        tijolos[c][r] = { x: 0, y: 0, status: 1 };
+      }
+    }
 
     let pontuacao = 0;
     let vidas = 3;
     let fase = 1;
-    let bolinha, tijolos, paddle;
-    let bolaEmMovimento = false;
 
-    function iniciarJogo() {
-      menu.style.display = "none";
-      container.style.display = "flex";
-      document.getElementById("voltarMenu").style.display = "block";
-      fase = 1;
-      pontuacao = 0;
-      vidas = 3;
-      iniciarFase();
+    document.addEventListener("keydown", keyDownHandler);
+    document.addEventListener("keyup", keyUpHandler);
+    document.addEventListener("mousemove", mouseMoveHandler);
+    canvas.addEventListener("touchmove", touchMoveHandler);
+
+    function keyDownHandler(e) {
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        direitaPressionada = true;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        esquerdaPressionada = true;
+      }
     }
 
-    function voltarAoMenu() {
-      location.reload();
+    function keyUpHandler(e) {
+      if (e.key === "Right" || e.key === "ArrowRight") {
+        direitaPressionada = false;
+      } else if (e.key === "Left" || e.key === "ArrowLeft") {
+        esquerdaPressionada = false;
+      }
     }
 
-    function desbloquearPersonagens(faseAtual) {
-      if (faseAtual >= 2) personagemSelect.options[1].disabled = false;
-      if (faseAtual >= 3) personagemSelect.options[2].disabled = false;
-      if (faseAtual >= 4) personagemSelect.options[3].disabled = false;
+    function mouseMoveHandler(e) {
+      let relativeX = e.clientX - canvas.getBoundingClientRect().left;
+      if (relativeX > 0 && relativeX < canvas.width) {
+        paddle.x = relativeX - paddle.largura / 2;
+      }
     }
 
-    function iniciarFase() {
-      bolaEmMovimento = false;
-      bolinha = {
-        x: canvas.width / 2,
-        y: canvas.height - 30,
-        dx: 3,
-        dy: -3,
-        raio: 8,
-        cor: personagemSelect.value
-      };
-      paddle = {
-        x: canvas.width / 2 - 40,
-        y: canvas.height - 10,
-        largura: 80,
-        altura: 10
-      };
-      tijolos = [];
-      let linhas = 5, colunas = 7;
-      for (let l = 0; l < linhas; l++) {
-        for (let c = 0; c < colunas; c++) {
-          tijolos.push({
-            x: c * 50 + 10,
-            y: l * 20 + 30,
-            w: 40,
-            h: 15,
-            destruido: false
-          });
+    function touchMoveHandler(e) {
+      const touch = e.touches[0];
+      const rect = canvas.getBoundingClientRect();
+      const relativeX = touch.clientX - rect.left;
+      if (relativeX > 0 && relativeX < canvas.width) {
+        paddle.x = relativeX - paddle.largura / 2;
+      }
+      e.preventDefault();
+    }
+
+    function colisaoTijolos() {
+      for (let c = 0; c < tijoloColuna; c++) {
+        for (let r = 0; r < tijoloLinha; r++) {
+          const t = tijolos[c][r];
+          if (t.status === 1) {
+            if (
+              bola.x > t.x &&
+              bola.x < t.x + tijroLargura &&
+              bola.y > t.y &&
+              bola.y < t.y + tijroAltura
+            ) {
+              bola.dy = -bola.dy;
+              t.status = 0;
+              pontuacao += 10;
+              document.getElementById("pontuacao").textContent = pontuacao;
+
+              if (pontuacao === tijoloColuna * tijoloLinha * 10 * fase) {
+                fase++;
+                document.getElementById("fase").textContent = fase;
+                bola.dx *= 1.2;
+                bola.dy *= 1.2;
+                reiniciarTijolos();
+              }
+            }
+          }
         }
       }
-      atualizarPainel();
-      desenhar();
     }
 
-    function atualizarPainel() {
-      pontosEl.textContent = `Pontos: ${pontuacao}`;
-      vidasEl.textContent = `Vidas: ${vidas}`;
-      faseEl.textContent = `Fase: ${fase}`;
-      desbloquearPersonagens(fase);
+    function reiniciarTijolos() {
+      for (let c = 0; c < tijoloColuna; c++) {
+        for (let r = 0; r < tijoloLinha; r++) {
+          tijolos[c][r].status = 1;
+        }
+      }
+      bola.x = canvas.width / 2;
+      bola.y = canvas.height - 30;
+      bola.dx = 3 * (bola.dx < 0 ? -1 : 1);
+      bola.dy = -3;
+      paddle.x = (canvas.width - paddle.largura) / 2;
+    }
+
+    function desenharBola() {
+      ctx.beginPath();
+      ctx.arc(bola.x, bola.y, bola.raio, 0, Math.PI * 2);
+      ctx.fillStyle = "#0ff";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function desenharPaddle() {
+      ctx.beginPath();
+      ctx.rect(paddle.x, canvas.height - paddle.altura, paddle.largura, paddle.altura);
+      ctx.fillStyle = "#0ff";
+      ctx.fill();
+      ctx.closePath();
+    }
+
+    function desenharTijolos() {
+      for (let c = 0; c < tijoloColuna; c++) {
+        for (let r = 0; r < tijoloLinha; r++) {
+          if (tijolos[c][r].status === 1) {
+            const tijroX = c * (tijroLargura + tijroEspaco) + margemEsquerda;
+            const tijroY = r * (tijroAltura + tijroEspaco) + margemTopo;
+            tijolos[c][r].x = tijroX;
+            tijolos[c][r].y = tijroY;
+            ctx.beginPath();
+            ctx.rect(tijroX, tijroY, tijroLargura, tijroAltura);
+            ctx.fillStyle = "#0ff";
+            ctx.fill();
+            ctx.closePath();
+          }
+        }
+      }
     }
 
     function desenhar() {
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      // bolinha
-      ctx.beginPath();
-      ctx.arc(bolinha.x, bolinha.y, bolinha.raio, 0, Math.PI * 2);
-      ctx.fillStyle = "#0ff";
-      ctx.fill();
-      ctx.closePath();
+      desenharTijolos();
+      desenharBola();
+      desenharPaddle();
+      colisaoTijolos();
 
-      // paddle
-      ctx.fillStyle = "#0ff";
-      ctx.fillRect(paddle.x, paddle.y, paddle.largura, paddle.altura);
+      if (
+        bola.x + bola.dx > canvas.width - bola.raio ||
+        bola.x + bola.dx < bola.raio
+      ) {
+        bola.dx = -bola.dx;
+      }
 
-      // tijolos
-      tijolos.forEach(t => {
-        if (!t.destruido) {
-          ctx.fillStyle = "#a0f";
-          ctx.fillRect(t.x, t.y, t.w, t.h);
-        }
-      });
-
-      if (bolaEmMovimento) {
-        bolinha.x += bolinha.dx;
-        bolinha.y += bolinha.dy;
-
-        // colisão com paredes
-        if (bolinha.x < bolinha.raio || bolinha.x > canvas.width - bolinha.raio) bolinha.dx *= -1;
-        if (bolinha.y < bolinha.raio) bolinha.dy *= -1;
-        if (bolinha.y > canvas.height) {
-          vidas--;
-          if (vidas === 0) {
-            alert("Fim de jogo!");
-            voltarAoMenu();
-            return;
-          }
-          iniciarFase();
-          return;
-        }
-
-        // colisão com paddle
+      if (bola.y + bola.dy < bola.raio) {
+        bola.dy = -bola.dy;
+      } else if (bola.y + bola.dy > canvas.height - bola.raio) {
         if (
-          bolinha.x > paddle.x &&
-          bolinha.x < paddle.x + paddle.largura &&
-          bolinha.y + bolinha.raio > paddle.y
+          bola.x > paddle.x &&
+          bola.x < paddle.x + paddle.largura
         ) {
-          bolinha.dy *= -1;
-        }
-
-        // colisão com tijolos
-        tijolos.forEach(t => {
-          if (!t.destruido &&
-              bolinha.x > t.x && bolinha.x < t.x + t.w &&
-              bolinha.y - bolinha.raio < t.y + t.h &&
-              bolinha.y + bolinha.raio > t.y) {
-            bolinha.dy *= -1;
-            t.destruido = true;
-            pontuacao += 10;
-            atualizarPainel();
-            mostrarComentario();
+          bola.dy = -bola.dy;
+        } else {
+          vidas--;
+          document.getElementById("vidas").textContent = vidas;
+          if (!vidas) {
+            alert("Fim de jogo! Sua pontuação: " + pontuacao);
+            document.location.reload();
+          } else {
+            bola.x = canvas.width / 2;
+            bola.y = canvas.height - 30;
+            bola.dx = 3;
+            bola.dy = -3;
+            paddle.x = (canvas.width - paddle.largura) / 2;
           }
-        });
-
-        // próxima fase
-        if (tijolos.every(t => t.destruido)) {
-          fase++;
-          iniciarFase();
         }
+      }
+
+      bola.x += bola.dx;
+      bola.y += bola.dy;
+
+      if (direitaPressionada && paddle.x < canvas.width - paddle.largura) {
+        paddle.x += 7;
+      } else if (esquerdaPressionada && paddle.x > 0) {
+        paddle.x -= 7;
       }
 
       requestAnimationFrame(desenhar);
     }
 
-    function mostrarComentario() {
-      const comentarios = ["Mandou bem!", "Combo!", "Boa jogada!", "Destruidor!", "Show!"];
-      const comentario = comentarios[Math.floor(Math.random() * comentarios.length)];
-      const el = document.getElementById("comentarios");
-      el.textContent = comentario;
-      el.style.animation = "none";
-      el.offsetHeight;
-      el.style.animation = "flutuar 2s ease-out forwards";
+    desenhar();
+
+    function voltarAoMenu() {
+      alert("Voltando ao menu...");
+      location.reload();
     }
-
-    canvas.addEventListener("mousemove", e => {
-      const rect = canvas.getBoundingClientRect();
-      paddle.x = e.clientX - rect.left - paddle.largura / 2;
-    });
-
-    canvas.addEventListener("touchmove", e => {
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      paddle.x = touch.clientX - rect.left - paddle.largura / 2;
-    });
-
-    canvas.addEventListener("click", () => {
-      if (!bolaEmMovimento) bolaEmMovimento = true;
-    });
   </script>
 </body>
 </html>
