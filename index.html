@@ -1,154 +1,153 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!DOCTYPE html><html lang="pt-BR">
 <head>
-  <meta charset="UTF-8" />
-  <title>Jogo de Basquete Simples</title>
+  <meta charset="UTF-8">
+  <title>Jogo de Basquete</title>
   <style>
     * {
-      margin: 0;
-      padding: 0;
       box-sizing: border-box;
     }
-
-    body, html {
+    html, body {
+      margin: 0;
+      padding: 0;
       height: 100%;
-      background: linear-gradient(#87ceeb, #ffffff);
-      font-family: Arial, sans-serif;
       overflow: hidden;
+      background: linear-gradient(#87CEFA, #f0f0f0);
+      font-family: Arial, sans-serif;
     }
-
     canvas {
       display: block;
-      margin: 0 auto;
-      background-color: #e0e0e0;
+      background-color: #87CEEB;
+    }
+    #score {
+      position: absolute;
+      top: 10px;
+      left: 10px;
+      font-size: 20px;
+      color: #fff;
+      font-weight: bold;
+      background: rgba(0,0,0,0.5);
+      padding: 10px;
+      border-radius: 8px;
     }
   </style>
 </head>
 <body>
-<canvas id="jogoCanvas" width="400" height="600"></canvas>
+  <div id="score">Pontos: 0</div>
+  <canvas id="gameCanvas"></canvas>  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
 
-<script>
-  const canvas = document.getElementById("jogoCanvas");
-  const ctx = canvas.getContext("2d");
+    let ball = {
+      x: canvas.width / 2,
+      y: canvas.height - 60,
+      radius: 20,
+      vx: 0,
+      vy: 0,
+      isDragging: false,
+      isMoving: false,
+    };
 
-  let bola = {
-    x: 200,
-    y: 500,
-    raio: 20,
-    cor: "orange",
-    dx: 0,
-    dy: 0,
-    arremessando: false
-  };
+    const hoop = {
+      x: canvas.width / 2 - 50,
+      y: 100,
+      width: 100,
+      height: 10,
+    };
 
-  let cesto = {
-    x: 150,
-    y: 100,
-    largura: 100,
-    altura: 10
-  };
+    let score = 0;
+    const scoreEl = document.getElementById('score');
 
-  let tocando = false;
-  let inicioX, inicioY;
+    function drawHoop() {
+      ctx.fillStyle = 'red';
+      ctx.fillRect(hoop.x, hoop.y, hoop.width, hoop.height);
+    }
 
-  function desenharCesto() {
-    ctx.fillStyle = "brown";
-    ctx.fillRect(cesto.x, cesto.y, cesto.largura, cesto.altura);
-  }
+    function drawBall() {
+      ctx.beginPath();
+      ctx.arc(ball.x, ball.y, ball.radius, 0, Math.PI * 2);
+      ctx.fillStyle = 'orange';
+      ctx.fill();
+      ctx.stroke();
+    }
 
-  function desenharBola() {
-    ctx.beginPath();
-    ctx.arc(bola.x, bola.y, bola.raio, 0, Math.PI * 2);
-    ctx.fillStyle = bola.cor;
-    ctx.fill();
-    ctx.closePath();
-  }
+    function resetBall() {
+      ball.x = canvas.width / 2;
+      ball.y = canvas.height - 60;
+      ball.vx = 0;
+      ball.vy = 0;
+      ball.isMoving = false;
+    }
 
-  function atualizar() {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    function draw() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawHoop();
+      drawBall();
+    }
 
-    if (bola.arremessando) {
-      bola.dy += 0.3; // gravidade
-      bola.x += bola.dx;
-      bola.y += bola.dy;
+    function update() {
+      if (ball.isMoving) {
+        ball.x += ball.vx;
+        ball.y += ball.vy;
+        ball.vy += 0.5; // gravidade
 
-      // quicar no chão
-      if (bola.y + bola.raio > canvas.height) {
-        bola.dy *= -0.6;
-        bola.y = canvas.height - bola.raio;
-      }
+        if (ball.y - ball.radius > canvas.height) {
+          resetBall();
+        }
 
-      // colisão nas laterais
-      if (bola.x - bola.raio < 0 || bola.x + bola.raio > canvas.width) {
-        bola.dx *= -1;
-      }
-
-      // acertou o cesto
-      if (
-        bola.x > cesto.x &&
-        bola.x < cesto.x + cesto.largura &&
-        bola.y - bola.raio < cesto.y + cesto.altura &&
-        bola.y - bola.raio > cesto.y - 10
-      ) {
-        bola.arremessando = false;
-        alert("🏀 Cesta!");
-        resetarBola();
+        // Verifica acerto no aro
+        if (
+          ball.y - ball.radius < hoop.y + hoop.height &&
+          ball.y + ball.radius > hoop.y &&
+          ball.x > hoop.x &&
+          ball.x < hoop.x + hoop.width
+        ) {
+          score++;
+          scoreEl.textContent = `Pontos: ${score}`;
+          resetBall();
+        }
       }
     }
 
-    desenharCesto();
-    desenharBola();
-    requestAnimationFrame(atualizar);
-  }
-
-  function resetarBola() {
-    bola.x = 200;
-    bola.y = 500;
-    bola.dx = 0;
-    bola.dy = 0;
-    bola.arremessando = false;
-  }
-
-  function iniciarArrasto(e) {
-    tocando = true;
-    const pos = pegarPosicao(e);
-    inicioX = pos.x;
-    inicioY = pos.y;
-  }
-
-  function soltarArrasto(e) {
-    if (!tocando) return;
-    tocando = false;
-
-    const fim = pegarPosicao(e);
-    const forcaX = (fim.x - inicioX) * 0.2;
-    const forcaY = (fim.y - inicioY) * 0.2;
-
-    bola.dx = forcaX;
-    bola.dy = forcaY;
-    bola.arremessando = true;
-  }
-
-  function pegarPosicao(e) {
-    if (e.touches) {
-      return {
-        x: e.touches[0].clientX - canvas.getBoundingClientRect().left,
-        y: e.touches[0].clientY - canvas.getBoundingClientRect().top
-      };
-    } else {
-      return {
-        x: e.clientX - canvas.getBoundingClientRect().left,
-        y: e.clientY - canvas.getBoundingClientRect().top
-      };
+    function loop() {
+      draw();
+      update();
+      requestAnimationFrame(loop);
     }
-  }
+    loop();
 
-  canvas.addEventListener("mousedown", iniciarArrasto);
-  canvas.addEventListener("mouseup", soltarArrasto);
-  canvas.addEventListener("touchstart", iniciarArrasto);
-  canvas.addEventListener("touchend", soltarArrasto);
+    let startX = 0;
+    let startY = 0;
 
-  atualizar();
-</script>
-</body>
+    function startDrag(e) {
+      const rect = canvas.getBoundingClientRect();
+      const x = e.touches ? e.touches[0].clientX : e.clientX;
+      const y = e.touches ? e.touches[0].clientY : e.clientY;
+
+      const dx = x - rect.left - ball.x;
+      const dy = y - rect.top - ball.y;
+      if (dx * dx + dy * dy < ball.radius * ball.radius) {
+        ball.isDragging = true;
+        startX = x;
+        startY = y;
+      }
+    }
+
+    function endDrag(e) {
+      if (ball.isDragging) {
+        const endX = e.changedTouches ? e.changedTouches[0].clientX : e.clientX;
+        const endY = e.changedTouches ? e.changedTouches[0].clientY : e.clientY;
+        ball.vx = (endX - startX) / 10;
+        ball.vy = (endY - startY) / 10;
+        ball.isMoving = true;
+        ball.isDragging = false;
+      }
+    }
+
+    canvas.addEventListener('mousedown', startDrag);
+    canvas.addEventListener('mouseup', endDrag);
+    canvas.addEventListener('touchstart', startDrag);
+    canvas.addEventListener('touchend', endDrag);
+  </script></body>
 </html>
