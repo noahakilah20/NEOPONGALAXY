@@ -2,321 +2,125 @@
 <html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Splash Crazy - Jogo da Bolinha Neon</title>
+  <title>Snake Neon - Pegue as Bolinhas!</title>
   <style>
     * {
-      box-sizing: border-box;
       margin: 0;
       padding: 0;
+      box-sizing: border-box;
     }
 
-    body, html {
+    html, body {
       height: 100%;
-      font-family: Arial, sans-serif;
       background-color: #000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      font-family: 'Arial', sans-serif;
       color: #0ff;
-      overflow: hidden;
     }
 
-    #container {
-      display: flex;
-      height: 100%;
-      width: 100%;
-    }
-
-    #painel-lateral {
-      width: 250px;
+    canvas {
       background-color: #111;
-      padding: 10px;
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-      border-right: 2px solid #0ff;
-    }
-
-    #jogoCanvas {
-      background-color: #000;
-      flex: 1;
-      display: block;
-    }
-
-    .painel-principal {
-      padding: 10px;
-      background-color: #111;
+      box-shadow: 0 0 15px #0ff, 0 0 30px #0ff inset;
       border-radius: 10px;
-      box-shadow: 0 0 10px #0ff;
     }
 
-    h2 {
-      font-size: 1.2em;
-      margin-bottom: 5px;
-    }
-
-    p {
-      margin-bottom: 10px;
-    }
-
-    #voltarMenu {
-      margin-top: auto;
-      background-color: #0ff;
-      color: #000;
-      border: none;
-      padding: 10px;
-      cursor: pointer;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    @media (max-width: 768px) {
-      #container {
-        flex-direction: column;
-      }
-
-      #painel-lateral {
-        width: 100%;
-        border-right: none;
-        border-top: 2px solid #0ff;
-      }
-
-      #jogoCanvas {
-        width: 100%;
-        height: 60vh;
-      }
+    #pontuacao {
+      position: absolute;
+      top: 20px;
+      font-size: 24px;
+      text-shadow: 0 0 5px #0ff;
     }
   </style>
 </head>
 <body>
-  <div id="container">
-    <canvas id="jogoCanvas" width="800" height="600"></canvas>
-    <div id="painel-lateral">
-      <div class="painel-principal">
-        <h2>Pontuação</h2>
-        <p id="pontuacao">0</p>
-        <h2>Vidas</h2>
-        <p id="vidas">3</p>
-        <h2>Fase</h2>
-        <p id="fase">1</p>
-      </div>
-      <button id="voltarMenu" onclick="voltarAoMenu()">⟵ Voltar ao Menu</button>
-    </div>
-  </div>
+  <div id="pontuacao">Pontuação: 0</div>
+  <canvas id="canvas" width="400" height="400"></canvas>
 
   <script>
-    let nome = prompt("Digite seu nome para começar:");
-    if (!nome) nome = "Jogador";
-    document.title = `Splash Crazy - Bem-vindo, ${nome}!`;
-
-    const canvas = document.getElementById("jogoCanvas");
-    const ctx = canvas.getContext("2d");
-
-    let bola = {
-      x: canvas.width / 2,
-      y: canvas.height - 30,
-      dx: 3,
-      dy: -3,
-      raio: 10
-    };
-
-    let paddle = {
-      altura: 10,
-      largura: 75,
-      x: (canvas.width - 75) / 2
-    };
-
-    let direitaPressionada = false;
-    let esquerdaPressionada = false;
-
-    let tijoloLinha = 5;
-    let tijoloColuna = 7;
-    let tijroLargura = 100;
-    let tijroAltura = 20;
-    let tijroEspaco = 10;
-    let margemTopo = 30;
-    let margemEsquerda = 30;
-
-    let tijolos = [];
-    for (let c = 0; c < tijoloColuna; c++) {
-      tijolos[c] = [];
-      for (let r = 0; r < tijoloLinha; r++) {
-        tijolos[c][r] = { x: 0, y: 0, status: 1 };
-      }
-    }
-
+    const canvas = document.getElementById('canvas');
+    const ctx = canvas.getContext('2d');
+    const box = 20;
     let pontuacao = 0;
-    let vidas = 3;
-    let fase = 1;
+    let direcao = 'RIGHT';
 
-    document.addEventListener("keydown", keyDownHandler);
-    document.addEventListener("keyup", keyUpHandler);
-    document.addEventListener("mousemove", mouseMoveHandler);
-    canvas.addEventListener("touchmove", touchMoveHandler);
+    let snake = [{ x: 9 * box, y: 10 * box }];
+    let bolinha = {
+      x: Math.floor(Math.random() * 19 + 1) * box,
+      y: Math.floor(Math.random() * 19 + 1) * box,
+    };
 
-    function keyDownHandler(e) {
-      if (e.key === "Right" || e.key === "ArrowRight") {
-        direitaPressionada = true;
-      } else if (e.key === "Left" || e.key === "ArrowLeft") {
-        esquerdaPressionada = true;
-      }
-    }
+    document.addEventListener("keydown", mover);
 
-    function keyUpHandler(e) {
-      if (e.key === "Right" || e.key === "ArrowRight") {
-        direitaPressionada = false;
-      } else if (e.key === "Left" || e.key === "ArrowLeft") {
-        esquerdaPressionada = false;
-      }
-    }
-
-    function mouseMoveHandler(e) {
-      let relativeX = e.clientX - canvas.getBoundingClientRect().left;
-      if (relativeX > 0 && relativeX < canvas.width) {
-        paddle.x = relativeX - paddle.largura / 2;
-      }
-    }
-
-    function touchMoveHandler(e) {
-      const touch = e.touches[0];
-      const rect = canvas.getBoundingClientRect();
-      const relativeX = touch.clientX - rect.left;
-      if (relativeX > 0 && relativeX < canvas.width) {
-        paddle.x = relativeX - paddle.largura / 2;
-      }
-      e.preventDefault();
-    }
-
-    function colisaoTijolos() {
-      for (let c = 0; c < tijoloColuna; c++) {
-        for (let r = 0; r < tijoloLinha; r++) {
-          const t = tijolos[c][r];
-          if (t.status === 1) {
-            if (
-              bola.x > t.x &&
-              bola.x < t.x + tijroLargura &&
-              bola.y > t.y &&
-              bola.y < t.y + tijroAltura
-            ) {
-              bola.dy = -bola.dy;
-              t.status = 0;
-              pontuacao += 10;
-              document.getElementById("pontuacao").textContent = pontuacao;
-
-              if (pontuacao === tijoloColuna * tijoloLinha * 10 * fase) {
-                fase++;
-                document.getElementById("fase").textContent = fase;
-                bola.dx *= 1.2;
-                bola.dy *= 1.2;
-                reiniciarTijolos();
-              }
-            }
-          }
-        }
-      }
-    }
-
-    function reiniciarTijolos() {
-      for (let c = 0; c < tijoloColuna; c++) {
-        for (let r = 0; r < tijoloLinha; r++) {
-          tijolos[c][r].status = 1;
-        }
-      }
-      bola.x = canvas.width / 2;
-      bola.y = canvas.height - 30;
-      bola.dx = 3 * (bola.dx < 0 ? -1 : 1);
-      bola.dy = -3;
-      paddle.x = (canvas.width - paddle.largura) / 2;
-    }
-
-    function desenharBola() {
-      ctx.beginPath();
-      ctx.arc(bola.x, bola.y, bola.raio, 0, Math.PI * 2);
-      ctx.fillStyle = "#0ff";
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    function desenharPaddle() {
-      ctx.beginPath();
-      ctx.rect(paddle.x, canvas.height - paddle.altura, paddle.largura, paddle.altura);
-      ctx.fillStyle = "#0ff";
-      ctx.fill();
-      ctx.closePath();
-    }
-
-    function desenharTijolos() {
-      for (let c = 0; c < tijoloColuna; c++) {
-        for (let r = 0; r < tijoloLinha; r++) {
-          if (tijolos[c][r].status === 1) {
-            const tijroX = c * (tijroLargura + tijroEspaco) + margemEsquerda;
-            const tijroY = r * (tijroAltura + tijroEspaco) + margemTopo;
-            tijolos[c][r].x = tijroX;
-            tijolos[c][r].y = tijroY;
-            ctx.beginPath();
-            ctx.rect(tijroX, tijroY, tijroLargura, tijroAltura);
-            ctx.fillStyle = "#0ff";
-            ctx.fill();
-            ctx.closePath();
-          }
-        }
-      }
+    function mover(e) {
+      if (e.key === "ArrowLeft" && direcao !== "RIGHT") direcao = "LEFT";
+      else if (e.key === "ArrowUp" && direcao !== "DOWN") direcao = "UP";
+      else if (e.key === "ArrowRight" && direcao !== "LEFT") direcao = "RIGHT";
+      else if (e.key === "ArrowDown" && direcao !== "UP") direcao = "DOWN";
     }
 
     function desenhar() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      desenharTijolos();
-      desenharBola();
-      desenharPaddle();
-      colisaoTijolos();
+      ctx.fillStyle = "#111";
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-      if (
-        bola.x + bola.dx > canvas.width - bola.raio ||
-        bola.x + bola.dx < bola.raio
-      ) {
-        bola.dx = -bola.dx;
+      for (let i = 0; i < snake.length; i++) {
+        ctx.fillStyle = i === 0 ? "#0ff" : "#088";
+        ctx.fillRect(snake[i].x, snake[i].y, box, box);
+        ctx.strokeStyle = "#000";
+        ctx.strokeRect(snake[i].x, snake[i].y, box, box);
       }
 
-      if (bola.y + bola.dy < bola.raio) {
-        bola.dy = -bola.dy;
-      } else if (bola.y + bola.dy > canvas.height - bola.raio) {
-        if (
-          bola.x > paddle.x &&
-          bola.x < paddle.x + paddle.largura
-        ) {
-          bola.dy = -bola.dy;
-        } else {
-          vidas--;
-          document.getElementById("vidas").textContent = vidas;
-          if (!vidas) {
-            alert("Fim de jogo! Sua pontuação: " + pontuacao);
-            document.location.reload();
-          } else {
-            bola.x = canvas.width / 2;
-            bola.y = canvas.height - 30;
-            bola.dx = 3;
-            bola.dy = -3;
-            paddle.x = (canvas.width - paddle.largura) / 2;
-          }
-        }
+      ctx.fillStyle = "#f0f";
+      ctx.beginPath();
+      ctx.arc(bolinha.x + box / 2, bolinha.y + box / 2, box / 2 - 2, 0, 2 * Math.PI);
+      ctx.fill();
+
+      let headX = snake[0].x;
+      let headY = snake[0].y;
+
+      if (direcao === "LEFT") headX -= box;
+      if (direcao === "UP") headY -= box;
+      if (direcao === "RIGHT") headX += box;
+      if (direcao === "DOWN") headY += box;
+
+      // Colisão com a parede
+      if (headX < 0 || headX >= canvas.width || headY < 0 || headY >= canvas.height || colidiu(headX, headY)) {
+        resetarJogo();
+        return;
       }
 
-      bola.x += bola.dx;
-      bola.y += bola.dy;
-
-      if (direitaPressionada && paddle.x < canvas.width - paddle.largura) {
-        paddle.x += 7;
-      } else if (esquerdaPressionada && paddle.x > 0) {
-        paddle.x -= 7;
+      // Se pegar a bolinha
+      if (headX === bolinha.x && headY === bolinha.y) {
+        pontuacao++;
+        document.getElementById("pontuacao").innerText = "Pontuação: " + pontuacao;
+        bolinha = {
+          x: Math.floor(Math.random() * 19 + 1) * box,
+          y: Math.floor(Math.random() * 19 + 1) * box,
+        };
+      } else {
+        snake.pop();
       }
 
-      requestAnimationFrame(desenhar);
+      snake.unshift({ x: headX, y: headY });
     }
 
-    desenhar();
-
-    function voltarAoMenu() {
-      alert("Voltando ao menu...");
-      location.reload();
+    function colidiu(x, y) {
+      for (let i = 0; i < snake.length; i++) {
+        if (snake[i].x === x && snake[i].y === y) return true;
+      }
+      return false;
     }
+
+    function resetarJogo() {
+      alert("Fim de jogo! Sua pontuação: " + pontuacao);
+      snake = [{ x: 9 * box, y: 10 * box }];
+      direcao = "RIGHT";
+      pontuacao = 0;
+      document.getElementById("pontuacao").innerText = "Pontuação: 0";
+    }
+
+    setInterval(desenhar, 150);
   </script>
 </body>
 </html>
